@@ -32,8 +32,9 @@ export interface ActionInterface {
 }
 
 export interface InputInterface extends VoteInterface {
-  function: GetFunctionType | SetFunctionType;
+  function: GetFunctionType | SetFunctionType | 'transactionBatch';
   cast?: string;
+  transactions?: InputInterface[];
 }
 
 export interface VoteInterface {

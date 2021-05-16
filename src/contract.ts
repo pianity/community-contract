@@ -1,9 +1,9 @@
-import { StateInterface, ActionInterface, VoteInterface, BalancesInterface, InputInterface, VaultInterface, VaultParamsInterface } from "./faces";
+import { StateInterface, ActionInterface, VoteInterface, BalancesInterface, InputInterface, VaultInterface, VaultParamsInterface, ResultInterface } from "./faces";
 
 declare const ContractError: any;
 declare const SmartWeave: any;
 
-export function handle(state: StateInterface, action: ActionInterface): { state: StateInterface } | { result: any } {
+export function handle(state: StateInterface, action: ActionInterface): { state?: StateInterface, result?: any } {
   const settings: Map<string, any> = new Map(state.settings);
   const balances: BalancesInterface = state.balances;
   const vault: VaultInterface = state.vault;
@@ -495,6 +495,25 @@ export function handle(state: StateInterface, action: ActionInterface): { state:
     }
 
     return { result: { target, role } };
+  }
+
+  /** Transaction Batching */
+  if(input.function === 'transactionBatch') {
+      const transactions: InputInterface[] = input.transactions
+      let results: (ResultInterface | null)[] = [];
+      let newState = state;
+
+      for (const tx of transactions) {
+          const res = handle(newState, { ...action, input: tx })
+
+          if ('state' in res) {
+              newState = res.state;
+          }
+
+          results.push('result' in res ? res.result : null);
+      }
+
+      return { state: newState, result: { results } }
   }
 
   throw new ContractError(`No function supplied or function not recognised: "${input.function}"`);
