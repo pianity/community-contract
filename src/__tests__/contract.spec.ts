@@ -614,3 +614,69 @@ describe('Finalize votes', () => {
     expect(state.roles[addresses.admin]).toBe('MAIN');
   });
 });
+
+describe('Transaction batching', () => {
+  let state = JSON.parse(fs.readFileSync('./src/contract.json', 'utf8'));
+
+  it(`should transfer from ${addresses.admin} to ${addresses.user}`, () => {
+    handler(state, {
+        input: {
+            function: 'transactionBatch',
+            transactions: [{
+                function: 'transfer',
+                target: addresses.user,
+                qty: 900,
+            }, {
+                function: 'transfer',
+                target: addresses.user,
+                qty: 100,
+            }],
+        }, caller: addresses.admin});
+  
+    expect(Object.keys(state.balances).length).toBe(2);
+    expect(state.balances[addresses.admin]).toBe(9999000);
+    expect(state.balances[addresses.user]).toBe(1000);
+  });
+
+  it(`should fail and not transfer anything`, () => {
+    try {
+      handler(state, {
+        input: {
+          function: 'transactionBatch',
+          transactions: [{
+              function: 'transfer',
+              target: addresses.admin,
+              qty: 1,
+          },{
+              function: 'transfer',
+              target: addresses.admin,
+              qty: 1000
+          }],
+        }, caller: addresses.user});
+    } catch (err) {
+      expect(err.name).toBe('ContractError');
+    }
+
+    expect(state.balances[addresses.admin]).toBe(9999000);
+    expect(state.balances[addresses.user]).toBe(1000);
+  });
+
+  it(`should get the balance for ${addresses.admin} and ${addresses.user}`, async () => {
+    const res = await handler(state, {
+        input: {
+            function: 'transactionBatch',
+            transactions: [{
+                function: 'balance',
+                target: addresses.admin,
+            }, {
+                function: 'balance',
+                target: addresses.user,
+            }],
+        }, caller: addresses.admin});
+
+    expect(res.result.results[0].target).toBe(addresses.admin);
+    expect(res.result.results[0].balance).toBe(10000000);
+    expect(res.result.results[1].target).toBe(addresses.user);
+    expect(res.result.results[1].balance).toBe(1000);
+  });
+});

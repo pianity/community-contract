@@ -501,10 +501,12 @@ export function handle(state: StateInterface, action: ActionInterface): { state?
   if(input.function === 'transactionBatch') {
       const transactions: InputInterface[] = input.transactions
       let results: (ResultInterface | null)[] = [];
-      let newState = state;
 
-      for (const tx of transactions) {
-          const res = handle(newState, { ...action, input: tx })
+      // We deep clone the state to avoid side effects from failed batch
+      let newState = JSON.parse(JSON.stringify(state));
+
+      for (const i in transactions) {
+          const res = handle(newState, Object.assign({}, action, { input: transactions[i] }))
 
           if ('state' in res) {
               newState = res.state;
@@ -513,7 +515,9 @@ export function handle(state: StateInterface, action: ActionInterface): { state?
           results.push('result' in res ? res.result : null);
       }
 
-      return { state: newState, result: { results } }
+      Object.assign(state, newState);
+
+      return { state, result: { results } }
   }
 
   throw new ContractError(`No function supplied or function not recognised: "${input.function}"`);
