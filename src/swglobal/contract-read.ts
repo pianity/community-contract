@@ -1,7 +1,7 @@
 import Arweave from 'arweave/node'
 import { loadContract } from './contract-load';
 import { retryWithBackoff, batch, softFailWith } from 'promises-tho';
-import { getTag, arrayToHex, unpackTags } from './utils';
+import { getTag, arrayToHex } from './utils';
 import { execute, ContractInteraction } from './contract-step';
 import { InteractionTx } from './interaction-tx';
 
